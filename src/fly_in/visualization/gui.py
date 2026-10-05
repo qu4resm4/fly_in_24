@@ -32,7 +32,7 @@ try:
     from PySide6.QtWidgets import (
         QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsScene, QGraphicsTextItem,
         QGraphicsView, QHBoxLayout, QLabel, QMainWindow, QPushButton, QSlider,
-        QVBoxLayout, QWidget,
+        QScrollArea, QVBoxLayout, QWidget,
     )
 except ImportError:  # pragma: no cover - dependência opcional
     QTimer = Any  # type: ignore[misc,assignment]
@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover - dependência opcional
     QBrush = QColor = QPen = Any  # type: ignore[misc,assignment]
     QGraphicsEllipseItem = QGraphicsLineItem = QGraphicsScene = Any  # type: ignore[misc,assignment]
     QGraphicsTextItem = QGraphicsView = QHBoxLayout = QLabel = QMainWindow = Any  # type: ignore[misc,assignment]  # noqa: E501
+    QScrollArea = Any  # type: ignore[misc,assignment]
     QPushButton = QSlider = QVBoxLayout = QWidget = Any  # type: ignore[misc,assignment]
 
 
@@ -77,6 +78,7 @@ class SimulationWindow(QMainWindow):
         self.view = QGraphicsView(self.scene)
         self.turn_label = QLabel()
         self.details_label = QLabel()
+        self.details_scroll = QScrollArea()
         self.play_button = QPushButton("Play")
         self.next_button = QPushButton("Próximo turno")
         self.reset_button = QPushButton("Reset")
@@ -107,8 +109,14 @@ class SimulationWindow(QMainWindow):
         controls.addWidget(self.speed_slider)
         side = QVBoxLayout()
         side.addWidget(self.turn_label)
-        side.addWidget(self.details_label)
-        side.addStretch()
+        self.details_label.setWordWrap(True)
+        self.details_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.details_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.details_scroll.setWidgetResizable(True)
+        self.details_scroll.setWidget(self.details_label)
+        self.details_scroll.setMinimumWidth(280)
+        self.details_scroll.setMaximumWidth(360)
+        side.addWidget(self.details_scroll, 1)
         central = QWidget()
         layout = QHBoxLayout(central)
         left = QVBoxLayout()
@@ -154,14 +162,25 @@ class SimulationWindow(QMainWindow):
         """Aplica posições e detalhes de um frame à cena."""
         self.frame_index = frame.turn
         self.turn_label.setText(f"Turno: {frame.turn}/{len(self.frames) - 1}")
-        details = ["Movimentos: " + (" ".join(frame.movements) or "nenhum")]
+        details = ["Movimentos:"]
+        details.extend(f"  {movement}" for movement in frame.movements or ("nenhum",))
         for identifier, position in sorted(frame.positions.items()):
             details.append(f"D{identifier}: {position}")
             self._move_drone(identifier, position)
         if frame.zone_usage:
-            zones = " ".join(f"{name} {used}/{limit or '∞'}"
-                             for name, (used, limit) in frame.zone_usage.items())
-            details.append("Zonas: " + zones)
+            details.append("Capacidades das zonas:")
+            details.extend(
+                f"  {name}: {used}/{limit or '∞'}"
+                for name, (used, limit) in frame.zone_usage.items()
+            )
+        active_connections = [
+            f"  {name}: {used}/{limit}"
+            for name, (used, limit) in frame.connection_usage.items()
+            if used
+        ]
+        if active_connections:
+            details.append("Capacidades das conexões:")
+            details.extend(active_connections)
         self.details_label.setText("\n".join(details))
 
     def _move_drone(self, identifier: int, position: str) -> None:

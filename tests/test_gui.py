@@ -38,3 +38,19 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(window.frame_index, 0)
         window.close()
         app.processEvents()
+
+    def test_details_panel_does_not_create_wide_lines(self) -> None:
+        root = Path(__file__).parents[1]
+        count, graph, start, goal = MapParser().parse(
+            root / "maps/challenger/01_the_impossible_dream.txt"
+        )
+        routes = RoutePlanner(graph).plan_routes(start, goal, count)
+        turns = Simulation(graph, start, goal, routes).run()
+        frames = create_frames(graph, start, count, turns)
+        app = QApplication.instance() or QApplication([])
+        window = SimulationWindow(graph, frames)
+        window._apply_frame(frames[1])
+        longest_line = max(map(len, window.details_label.text().splitlines()))
+        self.assertLess(longest_line, 80)
+        window.close()
+        app.processEvents()
