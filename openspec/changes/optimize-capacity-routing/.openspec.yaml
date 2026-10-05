@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-10-03
+goal: Melhorar o planejamento de rotas e o desempenho sem comprometer a validade
+  da simulação.
