@@ -1,4 +1,0 @@
-schema: spec-driven
-created: 2026-10-04
-goal: Tornar a simulação demonstrável e interativa sem acoplar a lógica de
-  roteamento à interface.

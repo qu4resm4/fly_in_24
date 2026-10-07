@@ -1,4 +1,0 @@
-schema: spec-driven
-created: 2026-10-03
-goal: Entregar uma primeira implementação verificável e orientada a objetos que
-  roteie drones respeitando custos e capacidades.
